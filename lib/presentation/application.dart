@@ -5,7 +5,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import 'component/unfocus.dart';
 import 'theme/app_theme.dart';
-import 'todo/todo_page.dart';
+import 'todo/list/todo_page.dart';
 
 class Application extends StatefulHookConsumerWidget {
   const Application({Key? key}) : super(key: key);
@@ -27,8 +27,7 @@ class _ApplicationState extends ConsumerState<Application> {
       appThemeNotifierProvider.select((value) => value.setting),
     );
 
-    useFuture(useMemoized(appTheme.themeMode, [themeMode]),
-        initialData: ThemeMode.light);
+    useFuture(useMemoized(appTheme.themeMode, [themeMode]), initialData: ThemeMode.light);
 
     return GetMaterialApp(
       title: 'TODO',

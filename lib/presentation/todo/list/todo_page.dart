@@ -5,17 +5,17 @@ import 'package:get/get.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 
-import '../../constancts.dart';
-import '../../domain/entities/task.dart';
-import '../component/dialog.dart';
-import '../component/empty_state.dart';
-import '../component/search_bar.dart';
-import '../setting_notifier.dart';
-import 'create/create_todo_bottom_sheet.dart';
-import 'setting/setting_bottom_sheet.dart';
+import '../../../constancts.dart';
+import '../../../domain/entities/task.dart';
+import '../../component/dialog.dart';
+import '../../component/empty_state.dart';
+import '../../component/search_bar.dart';
+import '../../setting_notifier.dart';
+import '../create/create_todo_bottom_sheet.dart';
+import '../setting/setting_bottom_sheet.dart';
+import 'logic/todo_list_provider.dart';
 import 'todo_item.dart';
-import 'todo_viewmodel.dart';
-import 'update/update_todo_bottom_sheet.dart';
+import '../update/update_todo_bottom_sheet.dart';
 
 class TodoPage extends StatefulHookConsumerWidget {
   const TodoPage({Key? key}) : super(key: key);
@@ -40,20 +40,26 @@ class _TodoPageState extends ConsumerState<TodoPage> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final sortby =
-        ref.watch(settingNotifierProvider.select((value) => value.sortby));
+  void initState() {
+    controller.addPageRequestListener((pageKey) {
+      _searchTask(
+        storeId: storeId ?? '',
+        controller: controller,
+        query: query,
+      );
+    });
+    super.initState();
+  }
 
-    useEffect(() {
-      controller.addPageRequestListener((pageKey) {
-        _searchTask(
-          storeId: storeId ?? '',
-          controller: controller,
-          query: query,
-        );
-      });
-      return;
-    }, []);
+  @override
+  Widget build(BuildContext context) {
+    final sortby = ref.watch(settingNotifierProvider.select((value) => value.sortby));
+
+    ref.watch(todoListProvider).whenOrNull(data: (data) {
+      final items = data.map((e) => convertTaskToTodoItem(e)).toList();
+      controller.itemList = items;
+      controller.nextPageKey = null;
+    });
 
     useEffect(() {
       controller.refresh();
@@ -158,16 +164,13 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     String? query,
   }) async {
     try {
-      final viewmodel = ref.read(todoViewModelProvider);
+      final todoListProviderNotifier = ref.read(todoListProvider.notifier);
       final sortby = ref.read(settingNotifierProvider).sortby;
-      final tasks = await viewmodel.getTasks();
-      final sortList = viewmodel.sortList(
+      await todoListProviderNotifier.getTasks();
+      todoListProviderNotifier.sortList(
         sortby: sortby,
-        tasks: tasks,
         query: query,
       );
-      final items = sortList.map((e) => convertTaskToTodoItem(e)).toList();
-      controller.appendLastPage(items);
     } catch (error) {
       rethrow;
     }
@@ -191,8 +194,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
 
   void showUpdateTaskBottomSheet(Task task) async {
     final result = await showModalBottomSheet<Task>(
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       clipBehavior: Clip.antiAliasWithSaveLayer,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       context: context,
@@ -203,19 +205,13 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     );
 
     if (result != null) {
-      final List<TodoItem> newItems = List.of(controller.itemList ?? []);
-      final index = newItems.indexWhere((e) => e.item.id == task.id);
-      if (index != -1) {
-        newItems[index] = convertTaskToTodoItem(result);
-        controller.itemList = newItems;
-      }
+      controller.refresh();
     }
   }
 
   void showCreateTaskBottomSheet() async {
     final result = await showModalBottomSheet<Task>(
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       clipBehavior: Clip.antiAliasWithSaveLayer,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       context: context,
@@ -224,9 +220,7 @@ class _TodoPageState extends ConsumerState<TodoPage> {
     );
 
     if (result != null) {
-      final List<TodoItem> newItems = List.of(controller.itemList ?? []);
-      newItems.insert(0, convertTaskToTodoItem(result));
-      controller.itemList = newItems;
+      controller.refresh();
     }
   }
 
@@ -239,33 +233,21 @@ class _TodoPageState extends ConsumerState<TodoPage> {
       hideNegativeButton: false,
       onPressed: () async {
         Get.back();
-        await ref.read(todoViewModelProvider).deleteTask(task.id);
-        final List<TodoItem> newItems = List.of(controller.itemList ?? []);
-        newItems.removeWhere((e) => e.item.id == task.id);
-        controller.itemList = newItems;
+        await ref.read(todoListProvider.notifier).deleteTask(task.id);
       },
     );
   }
 
   Future<void> changeStatus(Task task) async {
     final updateTask = task.copyWith(
-      status: task.status == Constants.IN_PROGRESS
-          ? Constants.COMPLETED
-          : Constants.IN_PROGRESS,
+      status: task.status == Constants.IN_PROGRESS ? Constants.COMPLETED : Constants.IN_PROGRESS,
     );
-    await ref.read(todoViewModelProvider).updateTask(updateTask);
-    final List<TodoItem> newItems = List.of(controller.itemList ?? []);
-    final index = newItems.indexWhere((e) => e.item.id == task.id);
-    if (index != -1) {
-      newItems[index] = convertTaskToTodoItem(updateTask);
-      controller.itemList = newItems;
-    }
+    await ref.read(todoListProvider.notifier).updateTask(updateTask);
   }
 
   void showSettingBottomSheet() async {
     await showModalBottomSheet(
-      shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(8))),
       clipBehavior: Clip.antiAliasWithSaveLayer,
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       context: context,

@@ -1,22 +1,20 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+import '../../../constancts.dart';
 import '../../../domain/entities/task.dart';
-import '../../constancts.dart';
-import '../../domain/usecase/task/delete_task_usecase.dart';
-import '../../domain/usecase/task/get_tasks_usecase.dart';
-import '../../domain/usecase/task/input.dart';
-import '../../domain/usecase/task/update_task_usecase.dart';
+import '../../../domain/usecase/task/delete_task_usecase.dart';
+import '../../../domain/usecase/task/get_tasks_usecase.dart';
+import '../../../domain/usecase/task/input.dart';
+import '../../../domain/usecase/task/update_task_usecase.dart';
 
-final todoViewModelProvider =
-    Provider.autoDispose<TodoViewModel>((ref) => TodoViewModel(
-          ref.read(getTasksCaseProvider),
-          ref.read(deleteTaskCaseProvider),
-          ref.read(updateTaskCaseProvider),
-        ));
+final todoViewModelProvider = Provider.autoDispose<TodoViewModel>((ref) => TodoViewModel(
+      ref.read(getTasksCaseProvider),
+      ref.read(deleteTaskCaseProvider),
+      ref.read(updateTaskCaseProvider),
+    ));
 
 class TodoViewModel {
-  TodoViewModel(
-      this._getTasksUseCase, this._deleteTaskUseCase, this._updateTaskUseCase);
+  TodoViewModel(this._getTasksUseCase, this._deleteTaskUseCase, this._updateTaskUseCase);
 
   final GetTasksUseCase _getTasksUseCase;
   final DeleteTaskUseCase _deleteTaskUseCase;
@@ -64,11 +62,7 @@ class TodoViewModel {
     }
 
     if (query != null) {
-      return newTasks
-          .where((e) =>
-              e.title.contains(query) ||
-              (e.description?.contains(query) ?? false))
-          .toList();
+      return newTasks.where((e) => e.title.contains(query) || (e.description?.contains(query) ?? false)).toList();
     }
     return newTasks;
   }

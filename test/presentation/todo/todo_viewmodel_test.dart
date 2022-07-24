@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:todo/constancts.dart';
 import 'package:todo/domain/entities/task.dart';
-import 'package:todo/presentation/todo/todo_viewmodel.dart';
+import 'package:todo/presentation/todo/list/todo_viewmodel.dart';
 
 void main() {
   final tasks = [
@@ -33,8 +33,7 @@ void main() {
       final container = ProviderContainer();
       final todoViewModel = container.read(todoViewModelProvider);
 
-      final sortTasks =
-          todoViewModel.sortList(sortby: Sortby.title, tasks: tasks);
+      final sortTasks = todoViewModel.sortList(sortby: Sortby.title, tasks: tasks);
       expect(sortTasks[0].id, '2');
       expect(sortTasks[1].id, '1');
       expect(sortTasks[2].id, '3');
@@ -44,8 +43,7 @@ void main() {
       final container = ProviderContainer();
       final todoViewModel = container.read(todoViewModelProvider);
 
-      final sortTasks =
-          todoViewModel.sortList(sortby: Sortby.date, tasks: tasks);
+      final sortTasks = todoViewModel.sortList(sortby: Sortby.date, tasks: tasks);
       expect(sortTasks[0].id, '1');
       expect(sortTasks[1].id, '2');
       expect(sortTasks[2].id, '3');
@@ -55,8 +53,7 @@ void main() {
       final container = ProviderContainer();
       final todoViewModel = container.read(todoViewModelProvider);
 
-      final sortTasks =
-          todoViewModel.sortList(sortby: Sortby.status, tasks: tasks);
+      final sortTasks = todoViewModel.sortList(sortby: Sortby.status, tasks: tasks);
       expect(sortTasks[0].id, '1');
       expect(sortTasks[1].id, '3');
       expect(sortTasks[2].id, '2');
@@ -69,8 +66,7 @@ void main() {
       final todoViewModel = container.read(todoViewModelProvider);
 
       const query = 'a';
-      final searchTasks = todoViewModel.sortList(
-          sortby: Sortby.title, tasks: tasks, query: query);
+      final searchTasks = todoViewModel.sortList(sortby: Sortby.title, tasks: tasks, query: query);
       expect(searchTasks.length, 1);
       expect(searchTasks[0].id, '2');
     });

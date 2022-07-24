@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-import '../../constancts.dart';
-import '../../utils/datetime.dart';
-import '../theme/app_theme.dart';
+import '../../../constancts.dart';
+import '../../../utils/datetime.dart';
+import '../../theme/app_theme.dart';
 
 class Todo {
   Todo({
@@ -70,9 +70,7 @@ class TodoItem extends StatelessWidget {
               itemBuilder: (BuildContext context) => <PopupMenuEntry>[
                 PopupMenuItem(
                   child: Text(
-                    item.status == Constants.COMPLETED
-                        ? 'Inprogress'
-                        : 'Complete',
+                    item.status == Constants.COMPLETED ? 'Inprogress' : 'Complete',
                     style: Theme.of(context).textTheme.subtitle1,
                   ),
                   value: 0,
@@ -80,10 +78,7 @@ class TodoItem extends StatelessWidget {
                 PopupMenuItem(
                   child: Text(
                     'Delete',
-                    style: Theme.of(context)
-                        .textTheme
-                        .subtitle1
-                        ?.copyWith(color: Theme.of(context).errorColor),
+                    style: Theme.of(context).textTheme.subtitle1?.copyWith(color: Theme.of(context).errorColor),
                   ),
                   value: 1,
                 ),
@@ -109,19 +104,19 @@ class TodoItem extends StatelessWidget {
             if (item.desc != null)
               Text(
                 item.desc!,
-                style: Theme.of(context).textTheme.bodyText2?.copyWith(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .onSurface
-                        .withOpacity(0.6)),
+                style: Theme.of(context)
+                    .textTheme
+                    .bodyText2
+                    ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
             Text(
               'Create at: ${DateFormat.yMMMEd().add_Hm().format(DateTimeUtil.fromSecondsSinceEpoch(item.createAt))}',
-              style: Theme.of(context).textTheme.bodyText2?.copyWith(
-                  color:
-                      Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyText2
+                  ?.copyWith(color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
             ),
           ],
         ),

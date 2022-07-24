@@ -17,20 +17,16 @@ void main() {
 
   test('should load tasks successfully', () async {
     final mockLocalStorage = MockPreferenceStorage();
-    final container = ProviderContainer(overrides: [
-      preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)
-    ]);
+    final container =
+        ProviderContainer(overrides: [preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)]);
     const id = 'key123';
-    const task =
-        Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
+    const task = Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
     final taskLocalDataSource = container.read(taskLocalDataSourceProvider);
 
-    when(() => mockLocalStorage.getListString(_listTask))
-        .thenAnswer((_) async => [id]);
-    when(() => mockLocalStorage.getString(id))
-        .thenAnswer((_) async => jsonEncode(
-              task.toJson(),
-            ));
+    when(() => mockLocalStorage.getListString(_listTask)).thenAnswer((_) async => [id]);
+    when(() => mockLocalStorage.getString(id)).thenAnswer((_) async => jsonEncode(
+          task.toJson(),
+        ));
 
     final result = await taskLocalDataSource.loadTasks();
     expect(result, [task]);
@@ -38,12 +34,10 @@ void main() {
 
   test('should set tasks successfully', () async {
     final mockLocalStorage = MockPreferenceStorage();
-    final container = ProviderContainer(overrides: [
-      preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)
-    ]);
+    final container =
+        ProviderContainer(overrides: [preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)]);
     const id = 'key123';
-    const task =
-        Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
+    const task = Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
     final taskLocalDataSource = container.read(taskLocalDataSourceProvider);
 
     when(() => mockLocalStorage.setString(
@@ -61,17 +55,14 @@ void main() {
     await taskLocalDataSource.addTask(task);
 
     verify(() => mockLocalStorage.getListString(_listTask)).called(1);
-    verify(() => mockLocalStorage.setString(
-        key: id, value: jsonEncode(task.toJson()))).called(1);
-    verify(() => mockLocalStorage.setListString(key: _listTask, value: [id]))
-        .called(1);
+    verify(() => mockLocalStorage.setString(key: id, value: jsonEncode(task.toJson()))).called(1);
+    verify(() => mockLocalStorage.setListString(key: _listTask, value: [id])).called(1);
   });
 
   test('should delete task successfully', () async {
     final mockLocalStorage = MockPreferenceStorage();
-    final container = ProviderContainer(overrides: [
-      preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)
-    ]);
+    final container =
+        ProviderContainer(overrides: [preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)]);
     const id = 'key123';
     final taskLocalDataSource = container.read(taskLocalDataSourceProvider);
 
@@ -88,18 +79,15 @@ void main() {
 
     verify(() => mockLocalStorage.getListString(_listTask)).called(1);
     verify(() => mockLocalStorage.remove(id)).called(1);
-    verify(() => mockLocalStorage.setListString(key: _listTask, value: []))
-        .called(1);
+    verify(() => mockLocalStorage.setListString(key: _listTask, value: [])).called(1);
   });
 
-  test('should up task successfully', () async {
+  test('should update task successfully', () async {
     final mockLocalStorage = MockPreferenceStorage();
-    final container = ProviderContainer(overrides: [
-      preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)
-    ]);
+    final container =
+        ProviderContainer(overrides: [preferenceLocalStorageProvider.overrideWithValue(mockLocalStorage)]);
     const id = 'key123';
-    const task =
-        Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
+    const task = Task(id: id, title: 'title', createAt: 0, status: Constants.COMPLETED);
     final taskLocalDataSource = container.read(taskLocalDataSourceProvider);
 
     when(() => mockLocalStorage.setString(
@@ -109,7 +97,6 @@ void main() {
 
     await taskLocalDataSource.updateTask(task);
 
-    verify(() => mockLocalStorage.setString(
-        key: id, value: jsonEncode(task.toJson()))).called(1);
+    verify(() => mockLocalStorage.setString(key: id, value: jsonEncode(task.toJson()))).called(1);
   });
 }
