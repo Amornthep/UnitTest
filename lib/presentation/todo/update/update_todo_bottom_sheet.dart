@@ -9,7 +9,6 @@ import 'package:get/get.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:queen_validators/queen_validators.dart';
 
 import '../../../constancts.dart';
 import '../../../domain/entities/task.dart';
@@ -27,8 +26,7 @@ class UpdateTodoBottomSheet extends StatefulHookConsumerWidget {
   final Task task;
 
   @override
-  ConsumerState<ConsumerStatefulWidget> createState() =>
-      _UpdateTodoBottomSheetState();
+  ConsumerState<ConsumerStatefulWidget> createState() => _UpdateTodoBottomSheetState();
 }
 
 class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
@@ -39,19 +37,36 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
   DateTime? createAt;
 
   @override
+  void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref
+          .read(updateTodoViewModelProvider)
+          .getTodo(id: widget.task.id)
+          .onError((error, stackTrace) => showErrorDialog());
+    });
+
+    super.initState();
+  }
+
+  @override
   void dispose() {
     super.dispose();
   }
 
+  void showErrorDialog() {
+    showSimpleDialog(
+      context,
+      text: 'Not found task',
+      title: 'Error',
+      onPressed: () => Get.back(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final titleTextEditingController =
-        useTextEditingController(text: widget.task.title);
-    final descTextEditingController =
-        useTextEditingController(text: widget.task.description);
-    final createAtTextEditingController = useTextEditingController(
-        text: DateFormat.yMMMMEEEEd()
-            .format(DateTimeUtil.fromSecondsSinceEpoch(widget.task.createAt)));
+    final titleTextEditingController = useTextEditingController(text: '');
+    final descTextEditingController = useTextEditingController(text: '');
+    final createAtTextEditingController = useTextEditingController(text: '');
 
     return DraggableScrollableSheet(
         initialChildSize: 0.95,
@@ -68,43 +83,61 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
                   topRight: Radius.circular(8.0),
                 ),
               ),
-              child: Column(
+              child: Stack(
                 children: [
-                  getHeaderView(),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Form(
-                          key: formKey,
-                          child: Column(
-                            children: [
-                              const Gap(24),
-                              getUUIDSection(),
-                              const Gap(24),
-                              getTitleSection(
-                                  controller: titleTextEditingController),
-                              const Gap(24),
-                              getDescriptionSection(
-                                  controller: descTextEditingController),
-                              const Gap(24),
-                              getStatusSection(),
-                              const Gap(24),
-                              getCreateAtSection(createAtTextEditingController),
-                              const Gap(24),
-                              getSelectImageSection(),
-                              const Gap(40),
-                              getSaveButton(
-                                descController: descTextEditingController,
-                                titleController: titleTextEditingController,
-                              )
-                            ],
+                  Column(
+                    children: [
+                      const HeaderView(),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Form(
+                              key: formKey,
+                              child: Column(
+                                children: [
+                                  const Gap(24),
+                                  Builder(builder: (context) {
+                                    final task = ref.watch(updateTodoViewModelProvider.select((value) => value.task));
+                                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                                      titleTextEditingController.value = TextEditingValue(text: task.title);
+                                      descTextEditingController.value = TextEditingValue(text: task.description ?? '');
+                                      createAtTextEditingController.value = TextEditingValue(
+                                          text: DateFormat.yMMMMEEEEd()
+                                              .format(DateTimeUtil.fromSecondsSinceEpoch(task.createAt)));
+                                    });
+
+                                    return Column(
+                                      children: [
+                                        UUIDSection(id: task.id),
+                                        const Gap(24),
+                                        TitleSection(controller: titleTextEditingController),
+                                        const Gap(24),
+                                        DescriptionSection(controller: descTextEditingController),
+                                        const Gap(24),
+                                        getStatusSection(task.status),
+                                        const Gap(24),
+                                        getCreateAtSection(createAtTextEditingController),
+                                        const Gap(24),
+                                        getSelectImageSection(task.image),
+                                      ],
+                                    );
+                                  }),
+                                  const Gap(40),
+                                  getSaveButton(
+                                    descController: descTextEditingController,
+                                    titleController: titleTextEditingController,
+                                  )
+                                ],
+                              ),
+                            ),
                           ),
+                          controller: controller,
                         ),
                       ),
-                      controller: controller,
-                    ),
+                    ],
                   ),
+                  const LoadingIndicator(),
                 ],
               ),
             ),
@@ -112,7 +145,7 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
         });
   }
 
-  Widget getSelectImageSection() {
+  Widget getSelectImageSection(String? image) {
     return Padding(
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: HookBuilder(builder: (context) {
@@ -120,8 +153,7 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
           return InkWell(
             borderRadius: BorderRadius.circular(46),
             onTap: () async {
-              final image =
-                  await ImagePicker().pickImage(source: ImageSource.gallery);
+              final image = await ImagePicker().pickImage(source: ImageSource.gallery);
               if (image != null) {
                 imagePath.value = image.path;
               }
@@ -133,21 +165,18 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
                     decoration: BoxDecoration(
                       image: DecorationImage(
                         fit: BoxFit.fill,
-                        image: Image.file(io.File(imagePath.value.toString()))
-                            .image,
+                        image: Image.file(io.File(imagePath.value.toString())).image,
                       ),
                     ),
                   )
-                : widget.task.image != null
+                : image != null
                     ? Container(
                         width: 90,
                         height: 90,
                         decoration: BoxDecoration(
                           image: DecorationImage(
                             fit: BoxFit.fill,
-                            image:
-                                Image.memory(base64Decode(widget.task.image!))
-                                    .image,
+                            image: Image.memory(base64Decode(image)).image,
                           ),
                         ),
                       )
@@ -207,12 +236,11 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
           ),
         ),
         onPressed: () async {
-          final isValid = formKey.currentState!.validate();
+          final viewModel = ref.read(updateTodoViewModelProvider);
+          final isValid = viewModel.validateInput(titleController.text);
 
           if (isValid) {
             try {
-              final viewModel = ref.read(updateTodoViewModelProvider);
-
               String? imageEncode;
               if (imagePath.value != null) {
                 final bytes = await io.File(imagePath.value!).readAsBytes();
@@ -223,8 +251,7 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
                 createAt: createAt?.secondsSinceEpoch() ?? widget.task.createAt,
                 status: statusSelected.value,
                 title: titleController.text,
-                description:
-                    descController.text.isEmpty ? null : descController.text,
+                description: descController.text.isEmpty ? null : descController.text,
                 image: imageEncode ?? widget.task.image,
                 id: widget.task.id,
               );
@@ -240,65 +267,9 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
     );
   }
 
-  Widget getTitleSection({
-    required TextEditingController controller,
-  }) {
-    return Column(
-      children: [
-        TextFormField(
-          controller: controller,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.all(
-                Radius.circular(8),
-              ),
-            ),
-            labelText: 'Title',
-          ),
-          autofocus: true,
-          textInputAction: TextInputAction.next,
-          inputFormatters: [
-            LengthLimitingTextInputFormatter(
-              Constants.titleLimit,
-            ),
-          ],
-          validator: qValidator([
-            const IsRequired(
-              'Title is required.',
-            ),
-          ]),
-        ),
-      ],
-    );
-  }
-
-  Widget getUUIDSection() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Text(
-              'Id',
-              style: Theme.of(context).textTheme.subtitle1,
-            ),
-            const Gap(24),
-          ],
-        ),
-        Expanded(
-          child: Text(
-            widget.task.id,
-            style: Theme.of(context).textTheme.subtitle1,
-            textAlign: TextAlign.end,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget getStatusSection() {
+  Widget getStatusSection(String status) {
     return HookBuilder(builder: (context) {
-      statusSelected = useState(widget.task.status);
+      statusSelected = useState(status);
       return Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -312,8 +283,7 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
               statusSelected.value == Constants.COMPLETED,
             ],
             onPressed: (index) {
-              statusSelected.value =
-                  index == 0 ? Constants.IN_PROGRESS : Constants.COMPLETED;
+              statusSelected.value = index == 0 ? Constants.IN_PROGRESS : Constants.COMPLETED;
             },
             children: [
               Padding(
@@ -344,10 +314,14 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
       );
     });
   }
+}
 
-  Widget getDescriptionSection({
-    required TextEditingController controller,
-  }) {
+class DescriptionSection extends ConsumerWidget {
+  const DescriptionSection({Key? key, required this.controller}) : super(key: key);
+
+  final TextEditingController controller;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         TextFormField(
@@ -369,8 +343,86 @@ class _UpdateTodoBottomSheetState extends ConsumerState<UpdateTodoBottomSheet> {
       ],
     );
   }
+}
 
-  Widget getHeaderView() {
+class TitleSection extends ConsumerWidget {
+  const TitleSection({Key? key, required this.controller}) : super(key: key);
+
+  final TextEditingController controller;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final titleValidater = ref.watch(updateTodoViewModelProvider.select((value) => value.titleValidater));
+    return Column(
+      children: [
+        TextFormField(
+          controller: controller,
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(
+              borderRadius: BorderRadius.all(
+                Radius.circular(8),
+              ),
+            ),
+            labelText: 'Title',
+            errorText: titleValidater,
+          ),
+          autofocus: true,
+          textInputAction: TextInputAction.next,
+          inputFormatters: [
+            LengthLimitingTextInputFormatter(
+              Constants.titleLimit,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class LoadingIndicator extends ConsumerWidget {
+  const LoadingIndicator({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isLoading = ref.watch(updateTodoViewModelProvider.select((value) => value.isLoading));
+    return isLoading ? const Center(child: CircularProgressIndicator()) : const SizedBox();
+  }
+}
+
+class UUIDSection extends StatelessWidget {
+  const UUIDSection({Key? key, required this.id}) : super(key: key);
+
+  final String id;
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Id',
+              style: Theme.of(context).textTheme.subtitle1,
+            ),
+            const Gap(24),
+          ],
+        ),
+        Expanded(
+          child: Text(
+            id,
+            style: Theme.of(context).textTheme.subtitle1,
+            textAlign: TextAlign.end,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class HeaderView extends StatelessWidget {
+  const HeaderView({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         Container(

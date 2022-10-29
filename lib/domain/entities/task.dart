@@ -15,4 +15,11 @@ class Task with _$Task {
   }) = _Task;
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
+
+  factory Task.empty() => const Task(
+        id: '',
+        createAt: 0,
+        status: '',
+        title: '',
+      );
 }

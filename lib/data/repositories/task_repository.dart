@@ -5,8 +5,8 @@ import '../../domain/repositories/task_repository.dart';
 import '../datasources/local/task/task_datasource.dart';
 import '../datasources/local/task/task_local_datasource.dart';
 
-final taskRepositoryProvider = Provider<TaskRepository>(
-    (ref) => TaskRepositoryImpl(ref.read(taskLocalDataSourceProvider)));
+final taskRepositoryProvider =
+    Provider<TaskRepository>((ref) => TaskRepositoryImpl(ref.read(taskLocalDataSourceProvider)));
 
 class TaskRepositoryImpl extends TaskRepository {
   final TaskDataSource _taskDataSource;
@@ -31,5 +31,10 @@ class TaskRepositoryImpl extends TaskRepository {
   @override
   Future<void> updateTask(Task task) {
     return _taskDataSource.updateTask(task);
+  }
+
+  @override
+  Future<Task?> getTask(String id) {
+    return _taskDataSource.getTask(id);
   }
 }

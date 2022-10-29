@@ -7,8 +7,8 @@ import '../../../../external/local_storage/local_storage.dart';
 import '../../../../external/local_storage/preference_local_storage.dart';
 import 'task_datasource.dart';
 
-final taskLocalDataSourceProvider = Provider<TaskLocalDataSource>(
-    (ref) => TaskLocalDataSource(ref.read(preferenceLocalStorageProvider)));
+final taskLocalDataSourceProvider =
+    Provider<TaskLocalDataSource>((ref) => TaskLocalDataSource(ref.read(preferenceLocalStorageProvider)));
 
 class TaskLocalDataSource extends TaskDataSource {
   TaskLocalDataSource(this._localStorage);
@@ -19,16 +19,14 @@ class TaskLocalDataSource extends TaskDataSource {
   @override
   Future<void> deleteTask(String id) async {
     await _localStorage.remove(id);
-    final List<String> taskIds =
-        await _localStorage.getListString(_listTask) ?? [];
+    final List<String> taskIds = await _localStorage.getListString(_listTask) ?? [];
     taskIds.remove(id);
     await _localStorage.setListString(key: _listTask, value: taskIds);
   }
 
   @override
   Future<List<Task>> loadTasks() async {
-    final List<String> taskIds =
-        await _localStorage.getListString(_listTask) ?? [];
+    final List<String> taskIds = await _localStorage.getListString(_listTask) ?? [];
     List<Task> tasks = [];
     for (String taskId in taskIds) {
       final taskJson = await _localStorage.getString(taskId);
@@ -43,6 +41,10 @@ class TaskLocalDataSource extends TaskDataSource {
 
   @override
   Future<void> updateTask(Task task) async {
+    final taskList = await loadTasks();
+    taskList.removeWhere((e) => e.id == task.id);
+    final isDuplicateTitle = taskList.where((e) => e.title == task.title).isNotEmpty;
+    if (isDuplicateTitle) throw 'Duplicate title : ${task.title}';
     await _localStorage.setString(
         key: task.id,
         value: jsonEncode(
@@ -56,12 +58,21 @@ class TaskLocalDataSource extends TaskDataSource {
       key: task.id,
       value: jsonEncode(task.toJson()),
     );
-    final List<String> taskIds =
-        await _localStorage.getListString(_listTask) ?? [];
+    final List<String> taskIds = await _localStorage.getListString(_listTask) ?? [];
     taskIds.add(task.id);
     await _localStorage.setListString(
       key: _listTask,
       value: taskIds,
     );
+  }
+
+  @override
+  Future<Task?> getTask(String id) async {
+    final taskJson = await _localStorage.getString(id);
+    if (taskJson != null) {
+      Map<String, dynamic> json = jsonDecode(taskJson);
+      return Task.fromJson(json);
+    }
+    return null;
   }
 }

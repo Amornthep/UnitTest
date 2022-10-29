@@ -8,4 +8,6 @@ abstract class TaskDataSource {
   Future<void> deleteTask(String id);
 
   Future<void> addTask(Task task);
+
+  Future<Task?> getTask(String id);
 }
